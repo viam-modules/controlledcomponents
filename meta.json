@@ -2,7 +2,7 @@
   "$schema": "https://dl.viam.dev/module.schema.json",
   "module_id": "viam:controlled-components",
   "visibility": "private",
-  "url": "",
+  "url": "https://github.com/viam-modules/controlled-components",
   "description": "Modular base component: sensor-controlled",
   "models": [
     {
