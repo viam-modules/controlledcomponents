@@ -1,4 +1,3 @@
-// Package controlledcomponents base implements a base with feedback control from a movement sensor
 package controlledcomponents
 
 import (

@@ -1,4 +1,5 @@
-// Package controlledcomponents base implements a base with feedback control from a movement sensor
+// Package controlledcomponents implements a components that will be controlled using components
+// this code implements a sensor-controlled base with feedback control from a movement sensor
 package controlledcomponents
 
 import (
@@ -130,6 +131,15 @@ func NewSensorControlled(ctx context.Context, deps resource.Dependencies, name r
 	return sb, nil
 }
 
+func (sb *sensorBase) Reconfigure(ctx context.Context, deps resource.Dependencies, conf resource.Config) error {
+	newConf, err := resource.NativeConfig[*Config](conf)
+	if err != nil {
+		return err
+	}
+
+	return sb.reconfigureWithConfig(ctx, deps, newConf)
+}
+
 func (sb *sensorBase) reconfigureWithConfig(ctx context.Context, deps resource.Dependencies, newConf *Config) error {
 	var err error
 	if sb.loop != nil {
@@ -240,15 +250,6 @@ func (sb *sensorBase) reconfigureWithConfig(ctx context.Context, deps resource.D
 	sb.conf = newConf
 
 	return nil
-}
-
-func (sb *sensorBase) Reconfigure(ctx context.Context, deps resource.Dependencies, conf resource.Config) error {
-	newConf, err := resource.NativeConfig[*Config](conf)
-	if err != nil {
-		return err
-	}
-
-	return sb.reconfigureWithConfig(ctx, deps, newConf)
 }
 
 func (sb *sensorBase) SetPower(
