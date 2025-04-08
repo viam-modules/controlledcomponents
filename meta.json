@@ -1,0 +1,28 @@
+{
+  "$schema": "https://dl.viam.dev/module.schema.json",
+  "module_id": "viam:controlled-components",
+  "visibility": "private",
+  "url": "",
+  "description": "Modular base component: sensor-controlled",
+  "models": [
+    {
+      "api": "rdk:component:base",
+      "model": "viam:controlled-components:sensor-controlled",
+      "short_description": "Provide a short (100 characters or less) description of this model here",
+      "markdown_link": "README.md#model-viamcontrolled-componentssensor-controlled"
+    }
+  ],
+  "applications": null,
+  "markdown_link": "",
+  "entrypoint": "bin/controlled-components",
+  "first_run": "",
+  "build": {
+    "build": "make module.tar.gz",
+    "setup": "make setup",
+    "path": "bin/module.tar.gz",
+    "arch": [
+      "linux/amd64",
+      "linux/arm64"
+    ]
+  }
+}

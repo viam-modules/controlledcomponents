@@ -1,0 +1,13 @@
+{
+  "module_name": "controlled-components",
+  "namespace": "viam",
+  "language": "go",
+  "resource_type": "component",
+  "resource_subtype": "base",
+  "model_name": "sensor-controlled",
+  "enable_cloud_build": true,
+  "initialize_git": false,
+  "generator_version": "0.1.0",
+  "generated_on": "2025-04-08T18:14:13.984857Z",
+  "module_readme_link": ""
+}
