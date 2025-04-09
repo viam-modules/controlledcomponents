@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"controlledcomponents"
+
+	"go.viam.com/rdk/components/base"
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/resource"
-	"go.viam.com/rdk/components/base"
 )
 
 func main() {
@@ -22,7 +23,7 @@ func realMain() error {
 	deps := resource.Dependencies{}
 	// can load these from a remote machine if you need
 
-	cfg := controlledcomponents.Config{}
+	cfg := controlledcomponents.SCBConfig{}
 
 	thing, err := controlledcomponents.NewSensorControlled(ctx, deps, base.Named("foo"), &cfg, logger)
 	if err != nil {
