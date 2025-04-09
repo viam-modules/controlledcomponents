@@ -18,7 +18,6 @@ import (
 	"go.viam.com/rdk/operation"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/spatialmath"
-	rdkutils "go.viam.com/rdk/utils"
 )
 
 const (
@@ -32,46 +31,19 @@ const (
 )
 
 var (
-	family = resource.NewModelFamily("viam", "controlled-components")
-	// SensorControlledModel is the name of the sensor_controlled model of a base component.
-	SensorControlledModel = family.WithModel("sensor-controlled")
-	errNoGoodSensor       = errors.New("no appropriate sensor for orientation or velocity feedback")
+	errNoGoodSensor = errors.New("no appropriate sensor for orientation or velocity feedback")
 )
 
-// Config configures a sensor controlled base.
-type Config struct {
-	MovementSensor    []string            `json:"movement_sensor"`
-	Base              string              `json:"base"`
-	ControlParameters []control.PIDConfig `json:"control_parameters,omitempty"`
-	ControlFreq       float64             `json:"control_frequency_hz,omitempty"`
-}
-
-// Validate validates all parts of the sensor controlled base config.
-func (cfg *Config) Validate(path string) ([]string, error) {
-	deps := []string{}
-	if len(cfg.MovementSensor) == 0 {
-		return nil, resource.NewConfigValidationError(path, errors.New("need at least one movement sensor for base"))
-	}
-	deps = append(deps, cfg.MovementSensor...)
-
-	if cfg.Base == "" {
-		return nil, resource.NewConfigValidationFieldRequiredError(path, "base")
-	}
-	deps = append(deps, cfg.Base)
-
-	for _, pidConf := range cfg.ControlParameters {
-		if pidConf.Type != typeLinVel && pidConf.Type != typeAngVel {
-			return nil, resource.NewConfigValidationError(path,
-				errors.New("control_parameters type must be 'linear_velocity' or 'angular_velocity'"))
-		}
-	}
-
-	return deps, nil
+func init() {
+	resource.RegisterComponent(
+		base.API,
+		SensorControlledModel,
+		resource.Registration[base.Base, *SCBConfig]{Constructor: newSCB})
 }
 
 type sensorBase struct {
 	name   resource.Name
-	conf   *Config
+	conf   *SCBConfig
 	logger logging.Logger
 	mu     sync.Mutex
 
@@ -94,19 +66,8 @@ type sensorBase struct {
 	controlFreq       float64
 }
 
-func (s *sensorBase) Name() resource.Name {
-	return s.name
-}
-
-func init() {
-	resource.RegisterComponent(
-		base.API,
-		SensorControlledModel,
-		resource.Registration[base.Base, *Config]{Constructor: newControlledComponentsSensorControlled})
-}
-
-func newControlledComponentsSensorControlled(ctx context.Context, deps resource.Dependencies, rawConf resource.Config, logger logging.Logger) (base.Base, error) {
-	conf, err := resource.NativeConfig[*Config](rawConf)
+func newSCB(ctx context.Context, deps resource.Dependencies, rawConf resource.Config, logger logging.Logger) (base.Base, error) {
+	conf, err := resource.NativeConfig[*SCBConfig](rawConf)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +76,7 @@ func newControlledComponentsSensorControlled(ctx context.Context, deps resource.
 
 }
 
-func NewSensorControlled(ctx context.Context, deps resource.Dependencies, name resource.Name, conf *Config, logger logging.Logger) (base.Base, error) {
+func NewSensorControlled(ctx context.Context, deps resource.Dependencies, name resource.Name, conf *SCBConfig, logger logging.Logger) (base.Base, error) {
 	sb := &sensorBase{
 		logger:        logger,
 		tunedVals:     &[]control.PIDConfig{{}, {}},
@@ -132,7 +93,7 @@ func NewSensorControlled(ctx context.Context, deps resource.Dependencies, name r
 }
 
 func (sb *sensorBase) Reconfigure(ctx context.Context, deps resource.Dependencies, conf resource.Config) error {
-	newConf, err := resource.NativeConfig[*Config](conf)
+	newConf, err := resource.NativeConfig[*SCBConfig](conf)
 	if err != nil {
 		return err
 	}
@@ -140,7 +101,7 @@ func (sb *sensorBase) Reconfigure(ctx context.Context, deps resource.Dependencie
 	return sb.reconfigureWithConfig(ctx, deps, newConf)
 }
 
-func (sb *sensorBase) reconfigureWithConfig(ctx context.Context, deps resource.Dependencies, newConf *Config) error {
+func (sb *sensorBase) reconfigureWithConfig(ctx context.Context, deps resource.Dependencies, newConf *SCBConfig) error {
 	var err error
 	if sb.loop != nil {
 		sb.loop.Stop()
@@ -252,6 +213,10 @@ func (sb *sensorBase) reconfigureWithConfig(ctx context.Context, deps resource.D
 	return nil
 }
 
+func (s *sensorBase) Name() resource.Name {
+	return s.name
+}
+
 func (sb *sensorBase) SetPower(
 	ctx context.Context, linear, angular r3.Vector, extra map[string]interface{},
 ) error {
@@ -315,78 +280,5 @@ func (sb *sensorBase) Close(ctx context.Context) error {
 	}
 
 	sb.activeBackgroundWorkers.Wait()
-	return nil
-}
-
-// determineHeadingFunc determines which movement sensor endpoint should be used for control.
-// The priority is Orientation -> Heading -> No heading control.
-func (sb *sensorBase) determineHeadingFunc(ctx context.Context,
-	orientation, compassHeading movementsensor.MovementSensor,
-) {
-	switch {
-	case orientation != nil:
-
-		sb.logger.CInfof(ctx, "using sensor %s as angular heading sensor for base %v", orientation.Name().ShortName(), sb.Name().ShortName())
-
-		sb.headingFunc = func(ctx context.Context) (float64, bool, error) {
-			orient, err := orientation.Orientation(ctx, nil)
-			if err != nil {
-				return 0, false, err
-			}
-			// this returns (-180-> 180)
-			yaw := rdkutils.RadToDeg(orient.EulerAngles().Yaw)
-
-			return yaw, true, nil
-		}
-	case compassHeading != nil:
-		sb.logger.CInfof(ctx, "using sensor %s as angular heading sensor for base %v", compassHeading.Name().ShortName(), sb.Name().ShortName())
-
-		sb.headingFunc = func(ctx context.Context) (float64, bool, error) {
-			compass, err := compassHeading.CompassHeading(ctx, nil)
-			if err != nil {
-				return 0, false, err
-			}
-			// flip compass heading to be CCW/Z up
-			compass = 360 - compass
-
-			// make the compass heading (-180->180)
-			if compass > 180 {
-				compass -= 360
-			}
-
-			return compass, true, nil
-		}
-	default:
-		sb.logger.CInfof(ctx, "base %v cannot control heading, no heading related sensor given",
-			sb.Name().ShortName())
-		sb.headingFunc = func(ctx context.Context) (float64, bool, error) {
-			return 0, false, nil
-		}
-	}
-}
-
-// if loop is tuning, return an error
-// if loop has been tuned but the values haven't been added to the config, error with tuned values.
-func (sb *sensorBase) checkTuningStatus() error {
-	done := true
-	needsTuning := false
-
-	for i := range sb.configPIDVals {
-		// check if the current signal needed tuning
-		if sb.configPIDVals[i].NeedsAutoTuning() {
-			// return true if either signal needed tuning
-			needsTuning = needsTuning || true
-			// if the tunedVals have not been updated, then tuning is still in progress
-			done = done && !(*sb.tunedVals)[i].NeedsAutoTuning()
-		}
-	}
-
-	if needsTuning {
-		if done {
-			return control.TunedPIDErr(sb.Name().ShortName(), *sb.tunedVals)
-		}
-		return control.TuningInProgressErr(sb.Name().ShortName())
-	}
-
 	return nil
 }

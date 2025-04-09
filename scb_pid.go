@@ -2,48 +2,11 @@ package controlledcomponents
 
 import (
 	"context"
-	"math"
 
 	"github.com/golang/geo/r3"
 
 	"go.viam.com/rdk/control"
 )
-
-// SetVelocity commands a base to move at the requested linear and angular velocites.
-// When controls are enabled, SetVelocity polls the provided velocity movement sensor and corrects
-// any error between the desired velocity and the actual velocity using a PID control loop.
-func (sb *sensorBase) SetVelocity(
-	ctx context.Context, linear, angular r3.Vector, extra map[string]interface{},
-) error {
-	sb.opMgr.CancelRunning(ctx)
-	ctx, done := sb.opMgr.New(ctx)
-	defer done()
-
-	if sb.controlLoopConfig == nil {
-		sb.logger.CWarnf(ctx, "control parameters not configured, using %v's SetVelocity method", sb.controlledBase.Name().ShortName())
-		return sb.controlledBase.SetVelocity(ctx, linear, angular, extra)
-	}
-
-	// check tuning status
-	if err := sb.checkTuningStatus(); err != nil {
-		return err
-	}
-
-	// make sure the control loop is enabled
-	if sb.loop == nil {
-		if err := sb.startControlLoop(); err != nil {
-			return err
-		}
-	}
-
-	// convert linear.Y mmPerSec to mPerSec, angular.Z is degPerSec
-	if err := sb.updateControlConfig(ctx, linear.Y/1000.0, angular.Z); err != nil {
-		return err
-	}
-	sb.loop.Resume()
-
-	return nil
-}
 
 // startControlLoop uses the control config to initialize a control loop and store it on the sensor controlled base struct.
 // The sensor base is the controllable interface that implements State and GetState called from the endpoint block of the control loop.
@@ -106,13 +69,6 @@ func (sb *sensorBase) updateControlConfig(
 	return nil
 }
 
-func sign(x float64) float64 { // A quick helper function
-	if math.Signbit(x) {
-		return -1.0
-	}
-	return 1.0
-}
-
 // SetState is called in endpoint.go of the controls package by the control loop
 // instantiated in this file. It is a helper function to call the sensor-controlled base's
 // SetVelocity from within that package.
@@ -149,4 +105,30 @@ func (sb *sensorBase) State(ctx context.Context) ([]float64, error) {
 		return []float64{}, err
 	}
 	return []float64{linvel.Y, angvel.Z}, nil
+}
+
+// if loop is tuning, return an error
+// if loop has been tuned but the values haven't been added to the config, error with tuned values.
+func (sb *sensorBase) checkTuningStatus() error {
+	done := true
+	needsTuning := false
+
+	for i := range sb.configPIDVals {
+		// check if the current signal needed tuning
+		if sb.configPIDVals[i].NeedsAutoTuning() {
+			// return true if either signal needed tuning
+			needsTuning = needsTuning || true
+			// if the tunedVals have not been updated, then tuning is still in progress
+			done = done && !(*sb.tunedVals)[i].NeedsAutoTuning()
+		}
+	}
+
+	if needsTuning {
+		if done {
+			return control.TunedPIDErr(sb.Name().ShortName(), *sb.tunedVals)
+		}
+		return control.TuningInProgressErr(sb.Name().ShortName())
+	}
+
+	return nil
 }

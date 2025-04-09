@@ -43,7 +43,7 @@ func sConfig() resource.Config {
 		Name:  "test",
 		API:   base.API,
 		Model: resource.Model{Name: "wheeled_base"},
-		ConvertedAttributes: &Config{
+		ConvertedAttributes: &SCBConfig{
 			MovementSensor: []string{"ms"},
 			Base:           "test_base",
 		},
@@ -113,14 +113,14 @@ func TestSensorBase(t *testing.T) {
 	ctx := context.Background()
 	logger := logging.NewTestLogger(t)
 	testCfg := sConfig()
-	conf, ok := testCfg.ConvertedAttributes.(*Config)
+	conf, ok := testCfg.ConvertedAttributes.(*SCBConfig)
 	test.That(t, ok, test.ShouldBeTrue)
 	deps, err := conf.Validate("path")
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, deps, test.ShouldResemble, []string{"ms", "test_base"})
 	sbDeps := createDependencies(t)
 
-	sb, err := newControlledComponentsSensorControlled(ctx, sbDeps, testCfg, logger)
+	sb, err := newSCB(ctx, sbDeps, testCfg, logger)
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, sb, test.ShouldNotBeNil)
 
@@ -166,7 +166,7 @@ func sBaseTestConfig(msNames []string, freq float64, linType, angType string) re
 		Name:  "test",
 		API:   base.API,
 		Model: resource.Model{Name: "controlled_base"},
-		ConvertedAttributes: &Config{
+		ConvertedAttributes: &SCBConfig{
 			MovementSensor:    msNames,
 			Base:              "test_base",
 			ControlParameters: controlParams,
@@ -257,7 +257,7 @@ func TestReconfig(t *testing.T) {
 
 	deps, cfg := msDependencies(t, []string{"orientation"})
 
-	b, err := newControlledComponentsSensorControlled(ctx, deps, cfg, logger)
+	b, err := newSCB(ctx, deps, cfg, logger)
 	test.That(t, err, test.ShouldBeNil)
 	sb, ok := b.(*sensorBase)
 	test.That(t, ok, test.ShouldBeTrue)
@@ -354,7 +354,7 @@ func TestSensorBaseWithVelocitiesSensor(t *testing.T) {
 	// generate a config with a non default freq
 	cfg := sBaseTestConfig([]string{"setvel1"}, 100, typeLinVel, typeAngVel)
 
-	b, err := newControlledComponentsSensorControlled(ctx, deps, cfg, logger)
+	b, err := newSCB(ctx, deps, cfg, logger)
 	test.That(t, err, test.ShouldBeNil)
 	sb, ok := b.(*sensorBase)
 	test.That(t, ok, test.ShouldBeTrue)
@@ -372,7 +372,7 @@ func TestSensorBaseSpin(t *testing.T) {
 	ctx := context.Background()
 	logger := logging.NewTestLogger(t)
 	deps, cfg := msDependencies(t, []string{"setvel1", "orientation1"})
-	b, err := newControlledComponentsSensorControlled(ctx, deps, cfg, logger)
+	b, err := newSCB(ctx, deps, cfg, logger)
 	test.That(t, err, test.ShouldBeNil)
 	sb, ok := b.(*sensorBase)
 	test.That(t, ok, test.ShouldBeTrue)
@@ -383,7 +383,7 @@ func TestSensorBaseSpin(t *testing.T) {
 	test.That(t, headingOri, test.ShouldEqual, orientationValue)
 
 	depsNoOri, cfgNoOri := msDependencies(t, []string{"setvel1"})
-	bNoOri, err := newControlledComponentsSensorControlled(ctx, depsNoOri, cfgNoOri, logger)
+	bNoOri, err := newSCB(ctx, depsNoOri, cfgNoOri, logger)
 	test.That(t, err, test.ShouldBeNil)
 	sbNoOri, ok := bNoOri.(*sensorBase)
 	test.That(t, ok, test.ShouldBeTrue)
@@ -435,7 +435,7 @@ func TestSensorBaseMoveStraight(t *testing.T) {
 	ctx := context.Background()
 	logger := logging.NewTestLogger(t)
 	deps, cfg := msDependencies(t, []string{"setvel1", "position1", "orientation1"})
-	b, err := newControlledComponentsSensorControlled(ctx, deps, cfg, logger)
+	b, err := newSCB(ctx, deps, cfg, logger)
 	test.That(t, err, test.ShouldBeNil)
 	sb, ok := b.(*sensorBase)
 	test.That(t, ok, test.ShouldBeTrue)
@@ -448,7 +448,7 @@ func TestSensorBaseMoveStraight(t *testing.T) {
 	test.That(t, headingOri, test.ShouldNotEqual, compassValue)
 
 	depsNoPos, cfgNoPos := msDependencies(t, []string{"setvel1"})
-	bNoPos, err := newControlledComponentsSensorControlled(ctx, depsNoPos, cfgNoPos, logger)
+	bNoPos, err := newSCB(ctx, depsNoPos, cfgNoPos, logger)
 	test.That(t, err, test.ShouldBeNil)
 	sbNoPos, ok := bNoPos.(*sensorBase)
 	test.That(t, ok, test.ShouldBeTrue)
@@ -525,7 +525,7 @@ func TestSensorBaseDoCommand(t *testing.T) {
 	ctx := context.Background()
 	logger := logging.NewTestLogger(t)
 	deps, cfg := msDependencies(t, []string{"setvel1", "position1", "orientation1"})
-	b, err := newControlledComponentsSensorControlled(ctx, deps, cfg, logger)
+	b, err := newSCB(ctx, deps, cfg, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	sb, ok := b.(*sensorBase)
