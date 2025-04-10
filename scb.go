@@ -10,7 +10,6 @@ import (
 
 	"github.com/golang/geo/r3"
 	"github.com/pkg/errors"
-
 	"go.viam.com/rdk/components/base"
 	"go.viam.com/rdk/components/movementsensor"
 	"go.viam.com/rdk/control"
@@ -30,9 +29,7 @@ const (
 	getPID             = "get_tuned_pid"
 )
 
-var (
-	errNoGoodSensor = errors.New("no appropriate sensor for orientation or velocity feedback")
-)
+var errNoGoodSensor = errors.New("no appropriate sensor for orientation or velocity feedback")
 
 func init() {
 	resource.RegisterComponent(
@@ -73,10 +70,12 @@ func newSCB(ctx context.Context, deps resource.Dependencies, rawConf resource.Co
 	}
 
 	return NewSensorControlled(ctx, deps, rawConf.ResourceName(), conf, logger)
-
 }
 
-func NewSensorControlled(ctx context.Context, deps resource.Dependencies, name resource.Name, conf *SCBConfig, logger logging.Logger) (base.Base, error) {
+// NewSensorControlled creates a new sensorcontrolled base using the base API.
+func NewSensorControlled(ctx context.Context, deps resource.Dependencies,
+	name resource.Name, conf *SCBConfig, logger logging.Logger,
+) (base.Base, error) {
 	sb := &sensorBase{
 		logger:        logger,
 		tunedVals:     &[]control.PIDConfig{{}, {}},
@@ -213,8 +212,8 @@ func (sb *sensorBase) reconfigureWithConfig(ctx context.Context, deps resource.D
 	return nil
 }
 
-func (s *sensorBase) Name() resource.Name {
-	return s.name
+func (sb *sensorBase) Name() resource.Name {
+	return sb.name
 }
 
 func (sb *sensorBase) SetPower(

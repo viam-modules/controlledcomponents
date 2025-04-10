@@ -1,8 +1,8 @@
+// Package main runs modular main for the module
 package main
 
 import (
 	"controlledcomponents"
-
 	"go.viam.com/rdk/components/base"
 	"go.viam.com/rdk/module"
 	"go.viam.com/rdk/resource"

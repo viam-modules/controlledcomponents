@@ -10,9 +10,6 @@ import (
 
 	"github.com/golang/geo/r3"
 	geo "github.com/kellydunn/golang-geo"
-	"go.viam.com/test"
-	"go.viam.com/utils"
-
 	"go.viam.com/rdk/components/base"
 	"go.viam.com/rdk/components/movementsensor"
 	"go.viam.com/rdk/control"
@@ -22,6 +19,8 @@ import (
 	"go.viam.com/rdk/testutils"
 	"go.viam.com/rdk/testutils/inject"
 	rdkutils "go.viam.com/rdk/utils"
+	"go.viam.com/test"
+	"go.viam.com/utils"
 )
 
 const (
