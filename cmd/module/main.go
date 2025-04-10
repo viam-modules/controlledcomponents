@@ -2,8 +2,7 @@
 package main
 
 import (
-	"controlledcomponents"
-
+	"github.com/viam-modules/controlledcomponents"
 	"go.viam.com/rdk/components/base"
 	"go.viam.com/rdk/module"
 	"go.viam.com/rdk/resource"

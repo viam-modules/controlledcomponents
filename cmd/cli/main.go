@@ -3,8 +3,8 @@ package main
 
 import (
 	"context"
-	"controlledcomponents"
 
+	"github.com/viam-modules/controlledcomponents"
 	"go.viam.com/rdk/components/base"
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/resource"

@@ -1,4 +1,4 @@
-module controlledcomponents
+module github.com/viam-modules/controlledcomponents
 
 go 1.23.0
 
