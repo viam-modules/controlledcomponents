@@ -54,6 +54,7 @@ module: test module.tar.gz
 all: test module.tar.gz
 
 setup:
+	sudo apt install libnlopt-dev
 	go mod tidy
 
 license-check:

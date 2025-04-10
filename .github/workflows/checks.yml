@@ -21,6 +21,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
+        make setup
 
     - name: Run unit tests
       run: make test
