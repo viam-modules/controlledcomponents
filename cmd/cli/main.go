@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-
 	"controlledcomponents"
 
 	"go.viam.com/rdk/components/base"
