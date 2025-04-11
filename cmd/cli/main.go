@@ -27,11 +27,11 @@ func realMain() error {
 
 	cfg := controlledcomponents.SCBConfig{}
 
-	thing, err := controlledcomponents.NewSensorControlled(ctx, deps, base.Named("foo"), &cfg, logger)
+	scb, err := controlledcomponents.NewSensorControlled(ctx, deps, base.Named("foo"), &cfg, logger)
 	if err != nil {
 		return err
 	}
-	defer func() { goutils.UncheckedError(thing.Close(ctx)) }()
+	defer func() { goutils.UncheckedError(scb.Close(ctx)) }()
 
 	return nil
 }

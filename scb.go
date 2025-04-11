@@ -255,15 +255,15 @@ func (sb *sensorBase) DoCommand(ctx context.Context, req map[string]interface{})
 
 	sb.mu.Lock()
 	defer sb.mu.Unlock()
-	ok := req[getPID].(bool)
-	if ok {
-		var respStr string
+
+	if _, ok := req[getPID]; ok {
+		controlParams := []control.PIDConfig{}
 		for _, pidConf := range *sb.tunedVals {
 			if !pidConf.NeedsAutoTuning() {
-				respStr += pidConf.String()
+				controlParams = append(controlParams, pidConf)
 			}
 		}
-		resp[getPID] = respStr
+		resp["control_parameters"] = controlParams
 	}
 
 	return resp, nil
