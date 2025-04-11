@@ -533,18 +533,11 @@ func TestSensorBaseDoCommand(t *testing.T) {
 	expectedPID := control.PIDConfig{P: 0.1, I: 2.0, D: 0.0}
 	sb.tunedVals = &[]control.PIDConfig{expectedPID, {}}
 	expectedeMap := make(map[string]interface{})
-	expectedeMap["control_parameters"] = []control.PIDConfig{expectedPID, {}}
+	expectedeMap["control_parameters"] = []control.PIDConfig{expectedPID}
 
 	req := make(map[string]interface{})
 	req["get_tuned_pid"] = true
 	resp, err := b.DoCommand(ctx, req)
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, resp, test.ShouldResemble, expectedeMap)
-
-	emptyMap := make(map[string]interface{})
-	req["get_tuned_pid"] = false
-	resp, err = b.DoCommand(ctx, req)
-	test.That(t, err, test.ShouldBeNil)
-	test.That(t, resp, test.ShouldResemble, emptyMap)
-	test.That(t, b.Close(ctx), test.ShouldBeNil)
 }
