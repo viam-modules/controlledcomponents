@@ -269,6 +269,10 @@ func (sb *sensorBase) DoCommand(ctx context.Context, req map[string]interface{})
 	return resp, nil
 }
 
+func (sb *sensorBase) Status(ctx context.Context) (map[string]interface{}, error) {
+	return map[string]interface{}{}, nil
+}
+
 func (sb *sensorBase) Close(ctx context.Context) error {
 	if err := sb.Stop(ctx, nil); err != nil {
 		return err

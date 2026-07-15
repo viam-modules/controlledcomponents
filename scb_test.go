@@ -114,7 +114,7 @@ func TestSensorBase(t *testing.T) {
 	testCfg := sConfig()
 	conf, ok := testCfg.ConvertedAttributes.(*SCBConfig)
 	test.That(t, ok, test.ShouldBeTrue)
-	deps, err := conf.Validate("path")
+	deps, _, err := conf.Validate("path")
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, deps, test.ShouldResemble, []string{"ms", "test_base"})
 	sbDeps := createDependencies(t)
@@ -267,21 +267,21 @@ func TestReconfig(t *testing.T) {
 	test.That(t, sb.controlFreq, test.ShouldEqual, defaultControlFreq)
 
 	deps, cfg = msDependencies(t, []string{"orientation1"})
-	err = b.Reconfigure(ctx, deps, cfg)
+	err = sb.Reconfigure(ctx, deps, cfg)
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, headingSupported, test.ShouldBeTrue)
 	test.That(t, headingOri, test.ShouldEqual, orientationValue)
 
 	deps, cfg = msDependencies(t, []string{"setvel1"})
-	err = b.Reconfigure(ctx, deps, cfg)
+	err = sb.Reconfigure(ctx, deps, cfg)
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, sb.velocities.Name().ShortName(), test.ShouldResemble, "setvel1")
 
 	deps, _ = msDependencies(t, []string{"setvel2"})
 	// generate a config with a non default freq
 	cfg = sBaseTestConfig([]string{"setvel2"}, 100, typeLinVel, typeAngVel)
-	err = b.Reconfigure(ctx, deps, cfg)
+	err = sb.Reconfigure(ctx, deps, cfg)
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, sb.velocities.Name().ShortName(), test.ShouldResemble, "setvel2")
 	headingNone, headingSupported, err := sb.headingFunc(context.Background())
@@ -291,7 +291,7 @@ func TestReconfig(t *testing.T) {
 	test.That(t, sb.controlFreq, test.ShouldEqual, 100.0)
 
 	deps, cfg = msDependencies(t, []string{"orientation3", "setvel3", "Bad"})
-	err = b.Reconfigure(ctx, deps, cfg)
+	err = sb.Reconfigure(ctx, deps, cfg)
 	test.That(t, err, test.ShouldBeNil)
 	headingOri, headingSupported, err = sb.headingFunc(context.Background())
 	test.That(t, err, test.ShouldBeNil)
@@ -300,7 +300,7 @@ func TestReconfig(t *testing.T) {
 	test.That(t, sb.velocities.Name().ShortName(), test.ShouldResemble, "setvel3")
 
 	deps, cfg = msDependencies(t, []string{"Bad", "orientation4", "setvel4", "orientation5", "setvel5"})
-	err = b.Reconfigure(ctx, deps, cfg)
+	err = sb.Reconfigure(ctx, deps, cfg)
 	test.That(t, err, test.ShouldBeNil)
 	headingOri, headingSupported, err = sb.headingFunc(context.Background())
 	test.That(t, err, test.ShouldBeNil)
@@ -309,7 +309,7 @@ func TestReconfig(t *testing.T) {
 	test.That(t, sb.velocities.Name().ShortName(), test.ShouldResemble, "setvel4")
 
 	deps, cfg = msDependencies(t, []string{"Bad", "orientation6", "setvel6", "position1", "compass1"})
-	err = b.Reconfigure(ctx, deps, cfg)
+	err = sb.Reconfigure(ctx, deps, cfg)
 	test.That(t, err, test.ShouldBeNil)
 	headingOri, headingSupported, err = sb.headingFunc(context.Background())
 	test.That(t, err, test.ShouldBeNil)
@@ -319,7 +319,7 @@ func TestReconfig(t *testing.T) {
 	test.That(t, sb.position.Name().ShortName(), test.ShouldResemble, "position1")
 
 	deps, cfg = msDependencies(t, []string{"Bad", "setvel7", "position2", "compass2"})
-	err = b.Reconfigure(ctx, deps, cfg)
+	err = sb.Reconfigure(ctx, deps, cfg)
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, sb.velocities.Name().ShortName(), test.ShouldResemble, "setvel7")
 	test.That(t, sb.position.Name().ShortName(), test.ShouldResemble, "position2")
@@ -330,7 +330,7 @@ func TestReconfig(t *testing.T) {
 	test.That(t, headingCompass, test.ShouldEqual, -compassValue)
 
 	deps, cfg = msDependencies(t, []string{"Bad"})
-	err = b.Reconfigure(ctx, deps, cfg)
+	err = sb.Reconfigure(ctx, deps, cfg)
 	test.That(t, sb.velocities, test.ShouldBeNil)
 	test.That(t, err, test.ShouldBeError, errNoGoodSensor)
 	headingBad, headingSupported, err := sb.headingFunc(context.Background())
@@ -341,7 +341,7 @@ func TestReconfig(t *testing.T) {
 	deps, _ = msDependencies(t, []string{"setvel2"})
 	// generate a config with invalid pid types
 	cfg = sBaseTestConfig([]string{"setvel2"}, 100, wrongTypeLinVel, wrongTypeAngVel)
-	err = b.Reconfigure(ctx, deps, cfg)
+	err = sb.Reconfigure(ctx, deps, cfg)
 	test.That(t, err.Error(), test.ShouldContainSubstring, "type must be 'linear_velocity' or 'angular_velocity'")
 	test.That(t, b.Close(ctx), test.ShouldBeNil)
 }
