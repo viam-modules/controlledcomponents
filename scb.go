@@ -124,7 +124,7 @@ func (sb *sensorBase) reconfigureWithConfig(ctx context.Context, deps resource.D
 	sb.controlledBase = nil
 
 	for _, name := range newConf.MovementSensor {
-		ms, err := movementsensor.FromDependencies(deps, name)
+		ms, err := movementsensor.FromProvider(deps, name)
 		if err != nil {
 			return errors.Wrapf(err, "no movement sensor named (%s)", name)
 		}
@@ -176,7 +176,7 @@ func (sb *sensorBase) reconfigureWithConfig(ctx context.Context, deps resource.D
 		return errNoGoodSensor
 	}
 
-	sb.controlledBase, err = base.FromDependencies(deps, newConf.Base)
+	sb.controlledBase, err = base.FromProvider(deps, newConf.Base)
 	if err != nil {
 		return errors.Wrapf(err, "no base named (%s)", newConf.Base)
 	}

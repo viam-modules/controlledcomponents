@@ -109,7 +109,7 @@ func addBaseDependency(deps resource.Dependencies) resource.Dependencies {
 }
 
 func TestSensorBase(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	logger := logging.NewTestLogger(t)
 	testCfg := sConfig()
 	conf, ok := testCfg.ConvertedAttributes.(*SCBConfig)
@@ -251,7 +251,7 @@ func msDependencies(t *testing.T, msNames []string,
 }
 
 func TestReconfig(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	logger := logging.NewTestLogger(t)
 
 	deps, cfg := msDependencies(t, []string{"orientation"})
@@ -260,7 +260,7 @@ func TestReconfig(t *testing.T) {
 	test.That(t, err, test.ShouldBeNil)
 	sb, ok := b.(*sensorBase)
 	test.That(t, ok, test.ShouldBeTrue)
-	headingOri, headingSupported, err := sb.headingFunc(context.Background())
+	headingOri, headingSupported, err := sb.headingFunc(t.Context())
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, headingSupported, test.ShouldBeTrue)
 	test.That(t, headingOri, test.ShouldEqual, orientationValue)
@@ -284,7 +284,7 @@ func TestReconfig(t *testing.T) {
 	err = sb.Reconfigure(ctx, deps, cfg)
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, sb.velocities.Name().ShortName(), test.ShouldResemble, "setvel2")
-	headingNone, headingSupported, err := sb.headingFunc(context.Background())
+	headingNone, headingSupported, err := sb.headingFunc(t.Context())
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, headingSupported, test.ShouldBeFalse)
 	test.That(t, headingNone, test.ShouldEqual, 0)
@@ -293,7 +293,7 @@ func TestReconfig(t *testing.T) {
 	deps, cfg = msDependencies(t, []string{"orientation3", "setvel3", "Bad"})
 	err = sb.Reconfigure(ctx, deps, cfg)
 	test.That(t, err, test.ShouldBeNil)
-	headingOri, headingSupported, err = sb.headingFunc(context.Background())
+	headingOri, headingSupported, err = sb.headingFunc(t.Context())
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, headingSupported, test.ShouldBeTrue)
 	test.That(t, headingOri, test.ShouldEqual, orientationValue)
@@ -302,7 +302,7 @@ func TestReconfig(t *testing.T) {
 	deps, cfg = msDependencies(t, []string{"Bad", "orientation4", "setvel4", "orientation5", "setvel5"})
 	err = sb.Reconfigure(ctx, deps, cfg)
 	test.That(t, err, test.ShouldBeNil)
-	headingOri, headingSupported, err = sb.headingFunc(context.Background())
+	headingOri, headingSupported, err = sb.headingFunc(t.Context())
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, headingSupported, test.ShouldBeTrue)
 	test.That(t, headingOri, test.ShouldEqual, orientationValue)
@@ -311,7 +311,7 @@ func TestReconfig(t *testing.T) {
 	deps, cfg = msDependencies(t, []string{"Bad", "orientation6", "setvel6", "position1", "compass1"})
 	err = sb.Reconfigure(ctx, deps, cfg)
 	test.That(t, err, test.ShouldBeNil)
-	headingOri, headingSupported, err = sb.headingFunc(context.Background())
+	headingOri, headingSupported, err = sb.headingFunc(t.Context())
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, headingSupported, test.ShouldBeTrue)
 	test.That(t, headingOri, test.ShouldEqual, orientationValue)
@@ -323,7 +323,7 @@ func TestReconfig(t *testing.T) {
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, sb.velocities.Name().ShortName(), test.ShouldResemble, "setvel7")
 	test.That(t, sb.position.Name().ShortName(), test.ShouldResemble, "position2")
-	headingCompass, headingSupported, err := sb.headingFunc(context.Background())
+	headingCompass, headingSupported, err := sb.headingFunc(t.Context())
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, headingSupported, test.ShouldBeTrue)
 	test.That(t, headingCompass, test.ShouldNotEqual, orientationValue)
@@ -333,7 +333,7 @@ func TestReconfig(t *testing.T) {
 	err = sb.Reconfigure(ctx, deps, cfg)
 	test.That(t, sb.velocities, test.ShouldBeNil)
 	test.That(t, err, test.ShouldBeError, errNoGoodSensor)
-	headingBad, headingSupported, err := sb.headingFunc(context.Background())
+	headingBad, headingSupported, err := sb.headingFunc(t.Context())
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, headingSupported, test.ShouldBeFalse)
 	test.That(t, headingBad, test.ShouldEqual, 0)
@@ -347,7 +347,7 @@ func TestReconfig(t *testing.T) {
 }
 
 func TestSensorBaseWithVelocitiesSensor(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	logger := logging.NewTestLogger(t)
 	deps, _ := msDependencies(t, []string{"setvel1"})
 	// generate a config with a non default freq
@@ -368,7 +368,7 @@ func TestSensorBaseWithVelocitiesSensor(t *testing.T) {
 }
 
 func TestSensorBaseSpin(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	logger := logging.NewTestLogger(t)
 	deps, cfg := msDependencies(t, []string{"setvel1", "orientation1"})
 	b, err := newSCB(ctx, deps, cfg, logger)
@@ -376,7 +376,7 @@ func TestSensorBaseSpin(t *testing.T) {
 	sb, ok := b.(*sensorBase)
 	test.That(t, ok, test.ShouldBeTrue)
 	test.That(t, err, test.ShouldBeNil)
-	headingOri, headingSupported, err := sb.headingFunc(context.Background())
+	headingOri, headingSupported, err := sb.headingFunc(t.Context())
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, headingSupported, test.ShouldBeTrue)
 	test.That(t, headingOri, test.ShouldEqual, orientationValue)
@@ -387,7 +387,7 @@ func TestSensorBaseSpin(t *testing.T) {
 	sbNoOri, ok := bNoOri.(*sensorBase)
 	test.That(t, ok, test.ShouldBeTrue)
 	test.That(t, err, test.ShouldBeNil)
-	headingOri, headingSupported, err = sbNoOri.headingFunc(context.Background())
+	headingOri, headingSupported, err = sbNoOri.headingFunc(t.Context())
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, headingSupported, test.ShouldBeFalse)
 	test.That(t, headingOri, test.ShouldEqual, 0)
@@ -417,7 +417,7 @@ func TestSensorBaseSpin(t *testing.T) {
 			test.That(t, err, test.ShouldBeNil)
 		})
 		time.Sleep(2 * time.Second)
-		err := sb.SetPower(context.Background(), r3.Vector{}, r3.Vector{}, nil)
+		err := sb.SetPower(t.Context(), r3.Vector{}, r3.Vector{}, nil)
 		test.That(t, err, test.ShouldBeNil)
 		wg.Wait()
 	})
@@ -431,7 +431,7 @@ func TestSensorBaseSpin(t *testing.T) {
 }
 
 func TestSensorBaseMoveStraight(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	logger := logging.NewTestLogger(t)
 	deps, cfg := msDependencies(t, []string{"setvel1", "position1", "orientation1"})
 	b, err := newSCB(ctx, deps, cfg, logger)
@@ -440,7 +440,7 @@ func TestSensorBaseMoveStraight(t *testing.T) {
 	test.That(t, ok, test.ShouldBeTrue)
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, sb.position.Name().ShortName(), test.ShouldResemble, "position1")
-	headingOri, headingSupported, err := sb.headingFunc(context.Background())
+	headingOri, headingSupported, err := sb.headingFunc(t.Context())
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, headingSupported, test.ShouldBeTrue)
 	test.That(t, headingOri, test.ShouldEqual, orientationValue)
@@ -452,7 +452,7 @@ func TestSensorBaseMoveStraight(t *testing.T) {
 	sbNoPos, ok := bNoPos.(*sensorBase)
 	test.That(t, ok, test.ShouldBeTrue)
 	test.That(t, err, test.ShouldBeNil)
-	headingZero, headingSupported, err := sbNoPos.headingFunc(context.Background())
+	headingZero, headingSupported, err := sbNoPos.headingFunc(t.Context())
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, headingSupported, test.ShouldBeFalse)
 	test.That(t, headingZero, test.ShouldEqual, 0)
@@ -482,7 +482,7 @@ func TestSensorBaseMoveStraight(t *testing.T) {
 			test.That(t, err, test.ShouldBeNil)
 		})
 		time.Sleep(2 * time.Second)
-		err := sb.SetPower(context.Background(), r3.Vector{}, r3.Vector{}, nil)
+		err := sb.SetPower(t.Context(), r3.Vector{}, r3.Vector{}, nil)
 		test.That(t, err, test.ShouldBeNil)
 		wg.Wait()
 	})
@@ -495,7 +495,7 @@ func TestSensorBaseMoveStraight(t *testing.T) {
 	t.Run("Test heading error wraps", func(t *testing.T) {
 		// orientation configured, so update the value for testing
 		orientationValue = 179
-		headingOri, headingSupported, err := sb.headingFunc(context.Background())
+		headingOri, headingSupported, err := sb.headingFunc(t.Context())
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, headingSupported, test.ShouldBeTrue)
 		// validate the orientation updated
@@ -521,7 +521,7 @@ func TestSensorBaseMoveStraight(t *testing.T) {
 }
 
 func TestSensorBaseDoCommand(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	logger := logging.NewTestLogger(t)
 	deps, cfg := msDependencies(t, []string{"setvel1", "position1", "orientation1"})
 	b, err := newSCB(ctx, deps, cfg, logger)
