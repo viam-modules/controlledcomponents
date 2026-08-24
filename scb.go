@@ -84,23 +84,14 @@ func NewSensorControlled(ctx context.Context, deps resource.Dependencies,
 		opMgr:         operation.NewSingleOperationManager(),
 	}
 
-	if err := sb.reconfigureWithConfig(ctx, deps, conf); err != nil {
+	if err := sb.configure(ctx, deps, conf); err != nil {
 		return nil, err
 	}
 
 	return sb, nil
 }
 
-func (sb *sensorBase) Reconfigure(ctx context.Context, deps resource.Dependencies, conf resource.Config) error {
-	newConf, err := resource.NativeConfig[*SCBConfig](conf)
-	if err != nil {
-		return err
-	}
-
-	return sb.reconfigureWithConfig(ctx, deps, newConf)
-}
-
-func (sb *sensorBase) reconfigureWithConfig(ctx context.Context, deps resource.Dependencies, newConf *SCBConfig) error {
+func (sb *sensorBase) configure(ctx context.Context, deps resource.Dependencies, newConf *SCBConfig) error {
 	var err error
 	if sb.loop != nil {
 		sb.loop.Stop()

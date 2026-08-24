@@ -250,16 +250,35 @@ func msDependencies(t *testing.T, msNames []string,
 	return deps, cfg
 }
 
+func recreate(
+	ctx context.Context,
+	t *testing.T,
+	oldBase base.Base,
+	deps resource.Dependencies,
+	cfg resource.Config,
+	logger logging.Logger,
+) (base.Base, *sensorBase, error) {
+	if oldBase != nil {
+		err := oldBase.Close(ctx)
+		test.That(t, err, test.ShouldBeNil)
+	}
+	b, err := newSCB(ctx, deps, cfg, logger)
+	if err != nil {
+		return nil, nil, err
+	}
+	sb, ok := b.(*sensorBase)
+	test.That(t, ok, test.ShouldBeTrue)
+	return b, sb, nil
+}
+
 func TestReconfig(t *testing.T) {
 	ctx := t.Context()
 	logger := logging.NewTestLogger(t)
 
 	deps, cfg := msDependencies(t, []string{"orientation"})
 
-	b, err := newSCB(ctx, deps, cfg, logger)
+	b, sb, err := recreate(ctx, t, nil, deps, cfg, logger)
 	test.That(t, err, test.ShouldBeNil)
-	sb, ok := b.(*sensorBase)
-	test.That(t, ok, test.ShouldBeTrue)
 	headingOri, headingSupported, err := sb.headingFunc(t.Context())
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, headingSupported, test.ShouldBeTrue)
@@ -267,21 +286,20 @@ func TestReconfig(t *testing.T) {
 	test.That(t, sb.controlFreq, test.ShouldEqual, defaultControlFreq)
 
 	deps, cfg = msDependencies(t, []string{"orientation1"})
-	err = sb.Reconfigure(ctx, deps, cfg)
-	test.That(t, err, test.ShouldBeNil)
+	b, _, err = recreate(ctx, t, b, deps, cfg, logger)
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, headingSupported, test.ShouldBeTrue)
 	test.That(t, headingOri, test.ShouldEqual, orientationValue)
 
 	deps, cfg = msDependencies(t, []string{"setvel1"})
-	err = sb.Reconfigure(ctx, deps, cfg)
+	b, sb, err = recreate(ctx, t, b, deps, cfg, logger)
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, sb.velocities.Name().ShortName(), test.ShouldResemble, "setvel1")
 
 	deps, _ = msDependencies(t, []string{"setvel2"})
 	// generate a config with a non default freq
 	cfg = sBaseTestConfig([]string{"setvel2"}, 100, typeLinVel, typeAngVel)
-	err = sb.Reconfigure(ctx, deps, cfg)
+	b, sb, err = recreate(ctx, t, b, deps, cfg, logger)
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, sb.velocities.Name().ShortName(), test.ShouldResemble, "setvel2")
 	headingNone, headingSupported, err := sb.headingFunc(t.Context())
@@ -291,7 +309,7 @@ func TestReconfig(t *testing.T) {
 	test.That(t, sb.controlFreq, test.ShouldEqual, 100.0)
 
 	deps, cfg = msDependencies(t, []string{"orientation3", "setvel3", "Bad"})
-	err = sb.Reconfigure(ctx, deps, cfg)
+	b, sb, err = recreate(ctx, t, b, deps, cfg, logger)
 	test.That(t, err, test.ShouldBeNil)
 	headingOri, headingSupported, err = sb.headingFunc(t.Context())
 	test.That(t, err, test.ShouldBeNil)
@@ -300,7 +318,7 @@ func TestReconfig(t *testing.T) {
 	test.That(t, sb.velocities.Name().ShortName(), test.ShouldResemble, "setvel3")
 
 	deps, cfg = msDependencies(t, []string{"Bad", "orientation4", "setvel4", "orientation5", "setvel5"})
-	err = sb.Reconfigure(ctx, deps, cfg)
+	b, sb, err = recreate(ctx, t, b, deps, cfg, logger)
 	test.That(t, err, test.ShouldBeNil)
 	headingOri, headingSupported, err = sb.headingFunc(t.Context())
 	test.That(t, err, test.ShouldBeNil)
@@ -309,7 +327,7 @@ func TestReconfig(t *testing.T) {
 	test.That(t, sb.velocities.Name().ShortName(), test.ShouldResemble, "setvel4")
 
 	deps, cfg = msDependencies(t, []string{"Bad", "orientation6", "setvel6", "position1", "compass1"})
-	err = sb.Reconfigure(ctx, deps, cfg)
+	b, sb, err = recreate(ctx, t, b, deps, cfg, logger)
 	test.That(t, err, test.ShouldBeNil)
 	headingOri, headingSupported, err = sb.headingFunc(t.Context())
 	test.That(t, err, test.ShouldBeNil)
@@ -319,7 +337,7 @@ func TestReconfig(t *testing.T) {
 	test.That(t, sb.position.Name().ShortName(), test.ShouldResemble, "position1")
 
 	deps, cfg = msDependencies(t, []string{"Bad", "setvel7", "position2", "compass2"})
-	err = sb.Reconfigure(ctx, deps, cfg)
+	b, sb, err = recreate(ctx, t, b, deps, cfg, logger)
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, sb.velocities.Name().ShortName(), test.ShouldResemble, "setvel7")
 	test.That(t, sb.position.Name().ShortName(), test.ShouldResemble, "position2")
@@ -330,20 +348,14 @@ func TestReconfig(t *testing.T) {
 	test.That(t, headingCompass, test.ShouldEqual, -compassValue)
 
 	deps, cfg = msDependencies(t, []string{"Bad"})
-	err = sb.Reconfigure(ctx, deps, cfg)
-	test.That(t, sb.velocities, test.ShouldBeNil)
+	_, _, err = recreate(ctx, t, b, deps, cfg, logger)
 	test.That(t, err, test.ShouldBeError, errNoGoodSensor)
-	headingBad, headingSupported, err := sb.headingFunc(t.Context())
-	test.That(t, err, test.ShouldBeNil)
-	test.That(t, headingSupported, test.ShouldBeFalse)
-	test.That(t, headingBad, test.ShouldEqual, 0)
 
 	deps, _ = msDependencies(t, []string{"setvel2"})
 	// generate a config with invalid pid types
 	cfg = sBaseTestConfig([]string{"setvel2"}, 100, wrongTypeLinVel, wrongTypeAngVel)
-	err = sb.Reconfigure(ctx, deps, cfg)
+	_, _, err = recreate(ctx, t, b, deps, cfg, logger)
 	test.That(t, err.Error(), test.ShouldContainSubstring, "type must be 'linear_velocity' or 'angular_velocity'")
-	test.That(t, b.Close(ctx), test.ShouldBeNil)
 }
 
 func TestSensorBaseWithVelocitiesSensor(t *testing.T) {
