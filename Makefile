@@ -17,7 +17,6 @@ $(MODULE_BINARY): Makefile go.mod *.go cmd/module/*.go
 tool-install:
 	GOBIN=`pwd`/$(TOOL_BIN) go install \
 		github.com/edaniels/golinters/cmd/combined \
-		github.com/golangci/golangci-lint/cmd/golangci-lint \
 		github.com/AlekSi/gocov-xml \
 		github.com/axw/gocov/gocov \
 		gotest.tools/gotestsum \
@@ -26,10 +25,12 @@ tool-install:
 lint: lint-go
 	PATH=$(TOOL_BIN) actionlint
 
+GOVERSION = $(shell grep '^go .\..' go.mod | head -n1 | cut -d' ' -f2)
+
 lint-go: tool-install
 	go mod tidy
 	export pkgs="`go list -f '{{.Dir}}' ./... | grep -v /proto/`" && echo "$$pkgs" | xargs go vet -vettool=$(TOOL_BIN)/combined
-	GOGC=50 $(TOOL_BIN)/golangci-lint run -v --fix --config=./etc/golangci.yaml
+	GOGC=50 GOTOOLCHAIN=go$(GOVERSION) go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.8 run -v --fix --config=./etc/golangci.yaml
 
 update:
 	go get go.viam.com/rdk@latest
